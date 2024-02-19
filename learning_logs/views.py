@@ -8,7 +8,6 @@ def index(request):
     '''Домашняя страница приложения Learning log'''
     return render(request, 'learning_logs/index.html')
 
-
 @login_required
 def topics(request):
     '''Вывод списка тем'''
@@ -21,8 +20,7 @@ def topics(request):
 def topic(request, topic_id):
     '''Выводит одну тему и все её записи.'''
     topic = Topic.objects.get(id=topic_id)
-    if topic.owner != request.user:
-        raise Http404
+
     entries = topic.entry_set.order_by('-date_added')
     context = {'topic': topic, 'entries': entries}
     return render(request, 'learning_logs/topic.html', context)
@@ -50,6 +48,7 @@ def new_topic(request):
 def new_entry(request, topic_id):
     '''Добавляет новую запись по конкретной теме.'''
     topic = Topic.objects.get(id=topic_id)
+    check_topic_owner(topic, request.user)
 
     if request.method != 'POST':
         # Данные не отправлялись, пустая форма
@@ -72,8 +71,7 @@ def edit_entry(request, entry_id):
     '''Редактирует существующую запись'''
     entry = Entry.objects.get(id=entry_id)
     topic = entry.topic
-    if topic.owner != request.user:
-        raise Http404
+    check_topic_owner(topic, request.user)
 
     if request.method != 'POST':
         # Исходящий запрос; форма заполняется данными текущей записи
@@ -87,3 +85,7 @@ def edit_entry(request, entry_id):
 
     context = {'entry': entry, 'topic': topic, 'form': form}
     return render(request, 'learning_logs/edit_entry.html', context)            
+
+def check_topic_owner(topic, user):
+    if topic.owner != user:
+        raise Http404
